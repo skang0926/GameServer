@@ -1,0 +1,43 @@
+### GameServer###
+*.vs
+x64
+
+Client/x64
+Engine/x64
+# Built data for maps
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+*.pdb
+*.idb
+*.log
+*.link
+*.recipe
+*.tlog
+*.lastbuildstate
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+*.ipa
