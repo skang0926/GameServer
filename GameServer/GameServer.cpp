@@ -26,10 +26,10 @@ void Pop()
 {
 	while (true)
 	{
-		int32 data = 0;
-		if (s.TryPop(data))
+		auto data = s.TryPop();
+		if (data != nullptr)
 		{
-			cout << data << endl;
+			cout << (*data) << endl;
 		}
 	}
 }
