@@ -2,8 +2,6 @@
 *.vs
 x64
 
-Client/x64
-Engine/x64
 # Built data for maps
 # Compiled Object files
 *.slo
