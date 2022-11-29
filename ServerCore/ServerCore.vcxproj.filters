@@ -7,24 +7,51 @@
     <Filter Include="Utils">
       <UniqueIdentifier>{838a5c99-c89a-4372-84d4-60fdb579b61f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Main">
+      <UniqueIdentifier>{d8ac9132-2869-44f2-83cd-8f3ce17e5c1c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Thread">
+      <UniqueIdentifier>{332a860b-bb1f-4363-9e35-d60ce5d4ee46}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Types.h">
+      <Filter>Main</Filter>
+    </ClInclude>
     <ClInclude Include="pch.h">
-      <Filter>Utils</Filter>
+      <Filter>Main</Filter>
     </ClInclude>
     <ClInclude Include="CorePch.h">
-      <Filter>Utils</Filter>
+      <Filter>Main</Filter>
     </ClInclude>
-    <ClInclude Include="Types.h">
-      <Filter>Utils</Filter>
+    <ClInclude Include="CoreTLS.h">
+      <Filter>Main</Filter>
+    </ClInclude>
+    <ClInclude Include="CoreMacro.h">
+      <Filter>Main</Filter>
+    </ClInclude>
+    <ClInclude Include="CoreGlobal.h">
+      <Filter>Main</Filter>
+    </ClInclude>
+    <ClInclude Include="ThreadManager.h">
+      <Filter>Thread</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
-      <Filter>Utils</Filter>
+      <Filter>Main</Filter>
     </ClCompile>
     <ClCompile Include="CorePch.cpp">
-      <Filter>Utils</Filter>
+      <Filter>Main</Filter>
+    </ClCompile>
+    <ClCompile Include="CoreTLS.cpp">
+      <Filter>Main</Filter>
+    </ClCompile>
+    <ClCompile Include="CoreGlobal.cpp">
+      <Filter>Main</Filter>
+    </ClCompile>
+    <ClCompile Include="ThreadManager.cpp">
+      <Filter>Thread</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
