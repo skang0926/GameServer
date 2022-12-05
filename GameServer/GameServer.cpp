@@ -7,32 +7,25 @@
 #include <Windows.h>
 #include "CoreMacro.h"
 #include "ThreadManager.h"
+#include "memory.h"
 
-#include "AccountManager.h"
-#include "PlayerManager.h"
+class Player
+{
+
+};
+
+class Knight : public Player
+{
+public:
+	int32 hp;
+	int32 mp;
+};
 
 int main()
 {
-	GThreadManager->Launch([=]
-	{
-		while (true)
-		{
-			cout << "PlayerThenAccount" << endl;
-			GPlayerManager.PlayerThenAccount();
-			this_thread::sleep_for(1s);
-		}
-	});
+	Player* p = xnew<Player>();
 
-	GThreadManager->Launch([=]
-	{
-		while (true)
-		{
-			cout << "AccountThenPlayer" << endl;
-			GAccountManager.AccountThenPlayer();
-			this_thread::sleep_for(1s);
-		}
-	});
+	Knight* k = static_cast<Knight*>(p);
 
-
-	GThreadManager->Join();
+	k->hp = 100;
 }
