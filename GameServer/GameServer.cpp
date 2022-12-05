@@ -8,6 +8,7 @@
 #include "CoreMacro.h"
 #include "ThreadManager.h"
 #include "memory.h"
+#include "Allocator.h"
 
 class Player
 {
@@ -23,9 +24,6 @@ public:
 
 int main()
 {
-	Player* p = xnew<Player>();
-
-	Knight* k = static_cast<Knight*>(p);
-
-	k->hp = 100;
+	Map<int32, Knight> m;
+	m[100] = Knight();
 }
