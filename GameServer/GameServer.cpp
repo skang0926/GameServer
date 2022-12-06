@@ -12,42 +12,27 @@
 #include "Memory.h"
 #include "MemoryPool.h"
 
-class Player
-{
-
-};
-
-class Knight : public Player
+class Knight
 {
 public:
-	Knight() : hp(0), mp(0)
-	{
-		cout << "Knight()" << endl;
-	}
-
-	~Knight()
-	{
-		cout << "~Knight()" << endl;
-	}
-
-	int32 hp;
-	int32 mp;
+	int32 _hp = rand() % 1000;
 };
 
 int main()
 {
-	for (int32 i = 0; i < 5; i++)
+	for (int32 i = 0; i < 3; i++)
 	{
 		GThreadManager->Launch([]()
 		{
 			while (true)
 			{
-				Vector<Knight> v(100);
+				Knight* k = xnew<Knight>();
 
-				Map<int32, Knight> m;
-				m[100] = Knight();
+				cout << k->_hp << endl;
 
 				this_thread::sleep_for(10ms);
+
+				xdelete(k);
 			}
 		});
 	}
