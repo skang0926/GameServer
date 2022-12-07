@@ -12,49 +12,79 @@
 #include "Memory.h"
 #include "MemoryPool.h"
 
-class Knight
+#include "TypeCast.h"
+
+using TL = TypeList<class Player, class Mage, class Knight, class Archer>;
+
+class Player
 {
 public:
-	int32 _hp = rand() % 1000;
+	Player()
+	{
+		INIT_TL(Player);
+	}
+	virtual ~Player() { }
+
+	DECLARE_TL;
 };
 
-class Monster
+class Knight : public Player
 {
 public:
-	int64 _id = 0;
+	Knight() { INIT_TL(Knight) }
+};
+
+class Mage : public Player
+{
+
+public:
+	Mage() { INIT_TL(Mage) }
+};
+
+class Archer : public Player
+{
+
+public:
+	Archer() { INIT_TL(Archer) }
+};
+
+class Dog
+{
+
 };
 
 int main()
 {
-	Knight* knights[100];
+	TypeConversion<TL> t;
+	t.s_convert[0][0];
 
-	for (int32 i = 0; i < 100; i++)
 	{
-		knights[i] = ObjectPool<Knight>::Pop();
+		Player* player = new Knight();
+		bool canCast = CanCast<Archer*>(player);
+		Knight* knight = TypeCast<Knight*>(player);
 	}
 
-	for (int32 i = 0; i < 100; i++)
 	{
-		ObjectPool<Knight>::Push(knights[i]);
-		knights[i] = nullptr;
+		shared_ptr<Player> player = MakeShared<Knight>();
+
+		shared_ptr<Archer> archer = TypeCast<Archer>(player);
+		bool canCast = CanCast<Mage>(player);
+
 	}
 
-	shared_ptr<Knight> sptr = ObjectPool<Knight>::MakeShared();
-	shared_ptr<Knight> sptr2 = MakeShared<Knight>();
+	//{
+	//	shared_ptr<Knight> player = MakeShared<Knight>();
 
+	//	//shared_ptr<Archer> archer = TypeCast<Archer>(player);
+	//	bool canCast = CanCast<Archer>(player);
+	//}
 	for (int32 i = 0; i < 3; i++)
 	{
 		GThreadManager->Launch([]()
 		{
 			while (true)
 			{
-				Knight* k = xnew<Knight>();
 
-				cout << k->_hp << endl;
-
-				this_thread::sleep_for(10ms);
-
-				xdelete(k);
 			}
 		});
 	}
