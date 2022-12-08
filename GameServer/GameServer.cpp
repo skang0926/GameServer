@@ -9,85 +9,71 @@
 #include "ThreadManager.h"
 #include "memory.h"
 #include "Allocator.h"
-#include "Memory.h"
 #include "MemoryPool.h"
 
-#include "TypeCast.h"
+#include <WinSock2.h>
+#include <MSWSock.h>
+#include <WS2tcpip.h>
+#pragma comment(lib, "ws2_32.lib")
 
-using TL = TypeList<class Player, class Mage, class Knight, class Archer>;
-
-class Player
-{
-public:
-	Player()
-	{
-		INIT_TL(Player);
-	}
-	virtual ~Player() { }
-
-	DECLARE_TL;
-};
-
-class Knight : public Player
-{
-public:
-	Knight() { INIT_TL(Knight) }
-};
-
-class Mage : public Player
-{
-
-public:
-	Mage() { INIT_TL(Mage) }
-};
-
-class Archer : public Player
-{
-
-public:
-	Archer() { INIT_TL(Archer) }
-};
-
-class Dog
-{
-
-};
 
 int main()
 {
-	TypeConversion<TL> t;
-	t.s_convert[0][0];
-
+	WSAData wsaData;
+	if (::WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
 	{
-		Player* player = new Knight();
-		bool canCast = CanCast<Archer*>(player);
-		Knight* knight = TypeCast<Knight*>(player);
+		return 0;
 	}
 
+	SOCKET listenSocket = ::socket(AF_INET, SOCK_STREAM, 0);
+	if (listenSocket == INVALID_SOCKET)
 	{
-		shared_ptr<Player> player = MakeShared<Knight>();
-
-		shared_ptr<Archer> archer = TypeCast<Archer>(player);
-		bool canCast = CanCast<Mage>(player);
-
+		int32 errCode = ::WSAGetLastError();
+		cout << "Socket ErrorCode : " << errCode << endl;
+		return 0;
 	}
 
-	//{
-	//	shared_ptr<Knight> player = MakeShared<Knight>();
+	SOCKADDR_IN serverAddr;
+	::memset(&serverAddr, 0, sizeof(serverAddr));
+	serverAddr.sin_family = AF_INET;
+	serverAddr.sin_addr.s_addr = ::htonl(INADDR_ANY);
+	serverAddr.sin_port = ::htons(7777); // 80 : HTTP
 
-	//	//shared_ptr<Archer> archer = TypeCast<Archer>(player);
-	//	bool canCast = CanCast<Archer>(player);
-	//}
-	for (int32 i = 0; i < 3; i++)
+	if (::bind(listenSocket, (SOCKADDR*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR)
 	{
-		GThreadManager->Launch([]()
+		int32 errCode = ::WSAGetLastError();
+		cout << "Socket ErrorCode : " << errCode << endl;
+		return 0;
+	}
+
+	if (::listen(listenSocket, 10) == SOCKET_ERROR)
+	{
+		int32 errCode = ::WSAGetLastError();
+		cout << "Socket ErrorCode : " << errCode << endl;
+		return 0;
+	}
+
+	while (true)
+	{
+		SOCKADDR_IN clientAddr;
+		::memset(&clientAddr, 0, sizeof(clientAddr));
+		int32 addrlen = sizeof(clientAddr);
+		SOCKET clientSocket = ::accept(listenSocket, (SOCKADDR*)&clientAddr, &addrlen);
+
+		if (clientSocket == INVALID_SOCKET)
 		{
-			while (true)
-			{
+			int32 errCode = ::WSAGetLastError();
+			cout << "Socket ErrorCode : " << errCode << endl;
+			return 0;
+		}
 
-			}
-		});
+		char ipAddress[16];
+		::inet_ntop(AF_INET, &clientAddr.sin_addr, ipAddress, sizeof(ipAddress));
+		cout << "Client Connected!IP = " << ipAddress << endl;
 	}
 
-	GThreadManager->Join();
+
+	::closesocket(listenSocket);
+
+	::WSACleanup();
 }
