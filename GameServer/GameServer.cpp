@@ -39,6 +39,7 @@ int main()
 	serverAddr.sin_addr.s_addr = ::htonl(INADDR_ANY);
 	serverAddr.sin_port = ::htons(7777); // 80 : HTTP
 
+	//서버 소켓 초기화
 	if (::bind(listenSocket, (SOCKADDR*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR)
 	{
 		int32 errCode = ::WSAGetLastError();
@@ -46,6 +47,7 @@ int main()
 		return 0;
 	}
 
+	//서버 시작, 허용 클라 수)
 	if (::listen(listenSocket, 10) == SOCKET_ERROR)
 	{
 		int32 errCode = ::WSAGetLastError();
@@ -70,6 +72,30 @@ int main()
 		char ipAddress[16];
 		::inet_ntop(AF_INET, &clientAddr.sin_addr, ipAddress, sizeof(ipAddress));
 		cout << "Client Connected!IP = " << ipAddress << endl;
+
+		while (true)
+		{
+			char recvBuffer[1000];
+
+			int32 recvLen = ::recv(clientSocket, recvBuffer, sizeof(recvBuffer), 0);
+			if (recvLen <= 0)
+			{
+				int32 errCode = ::WSAGetLastError();
+				cout << "Send ErrorCode : " << errCode << endl;
+				return 0;
+			}
+
+			cout << "Recv Data! Data = " << recvBuffer << endl;
+			cout << "Recv Data! Len = " << recvLen << endl;
+
+			//int32 resultCode = ::send(clientSocket, recvBuffer, recvLen, 0);
+			//if (resultCode == SOCKET_ERROR)
+			//{
+			//	int32 errCode = ::WSAGetLastError();
+			//	cout << "Send ErrorCode : " << errCode << endl;
+			//	return 0;
+			//}
+		}
 	}
 
 
