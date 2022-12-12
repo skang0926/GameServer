@@ -30,59 +30,100 @@ int main()
 		return 0;
 	}
 
-	SOCKET serverSocket = ::socket(AF_INET, SOCK_DGRAM, 0);
-	if (serverSocket == INVALID_SOCKET)
+	// 블로킹 소켓
+	// accept -> 접속한 클라가 있을때
+	// connect -> 서버 접속에 성공했을때
+	// send, sendto -> 요청한 데이터를 송신 버퍼에 복사했을때
+	// recv, recvto  -> 수신 버퍼에 도착한 데이터가 있고, 이를 유저레벨에 복사했을때
+
+	// 논 블로킹
+
+	SOCKET listenSocket = ::socket(AF_INET, SOCK_STREAM, 0);
+	if (listenSocket == INVALID_SOCKET)
 	{
-		HandleError("Socket");
+		return 0;
+	}
+
+	u_long on = 1;
+	if (::ioctlsocket(listenSocket, FIONBIO, &on) == INVALID_SOCKET)
+	{
 		return 0;
 	}
 
 	SOCKADDR_IN serverAddr;
 	::memset(&serverAddr, 0, sizeof(serverAddr));
 	serverAddr.sin_family = AF_INET;
-	serverAddr.sin_addr.s_addr = ::htonl(INADDR_ANY);	
-	serverAddr.sin_port = ::htons(7777); // 80 : HTTP
+	serverAddr.sin_addr.s_addr = ::htonl(INADDR_ANY);
+	serverAddr.sin_port = ::htons(7777);
 
-
-	if (::bind(serverSocket, (SOCKADDR*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR)
+	if (::bind(listenSocket, (SOCKADDR*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR)
 	{
-		HandleError("Socket");
 		return 0;
 	}
 
-	while (true)
+	if (::listen(listenSocket, SOMAXCONN) == SOCKET_ERROR)
 	{
-		SOCKADDR_IN clientAddr;
-		::memset(&clientAddr, 0, sizeof(clientAddr));
-		int32 addrLen = sizeof(clientAddr);
-
-
-		char recvBuffer[1000];
-		int32 recvLen = ::recvfrom(serverSocket, recvBuffer, sizeof(recvBuffer), 0, 
-			(SOCKADDR*)&clientAddr, &addrLen);
-
-		if (recvLen <= 0)
-		{
-			HandleError("RecvFrom");
-			return 0;
-		}
-
-		cout << "Recv Data! Data = " << recvBuffer << endl;
-		cout << "Recv Data! Len = " << recvLen << endl;
-
-		int32 errorCode = ::sendto(serverSocket, recvBuffer, recvLen, 0,
-			(SOCKADDR*)&clientAddr, sizeof(clientAddr));
-
-		if (errorCode == SOCKET_ERROR)
-		{
-			HandleError("RecvFrom");
-			return 0;
-		}
-
-		cout << "Send Data! Len = " << recvLen << endl;
+		return 0;
 	}
 
-	::closesocket(serverSocket);
+	SOCKADDR_IN clientAddr;
+	int32 addrLen = sizeof(clientAddr);
+
+	while (true)
+	{
+		SOCKET clientSocket = ::accept(listenSocket, (SOCKADDR*)&clientAddr, &addrLen);
+		if (clientSocket == INVALID_SOCKET)
+		{
+			// 논블로킹이라 여기 들어와도 문제 상황인지 알수없음
+			if (::WSAGetLastError() == WSAEWOULDBLOCK)
+			{
+				continue;
+			}
+
+			break;
+		}
+
+		cout << "Client Connected" << endl;
+
+
+		while (true)
+		{
+			char recvBuffer[1000];
+			int32 recvLen = ::recv(clientSocket, recvBuffer, sizeof(recvBuffer), 0);
+			if (recvLen == SOCKET_ERROR)
+			{
+				if (::WSAGetLastError() == WSAEWOULDBLOCK)
+				{
+					continue;
+				}
+
+				break;
+			}
+			else if (recvLen == 0)
+			{
+				break;
+			}
+
+			cout << "Recv Data Len = " << recvLen << endl;
+
+			while (true)
+			{
+				if (::send(clientSocket, recvBuffer, recvLen, 0) == SOCKET_ERROR)
+				{
+					if (::WSAGetLastError() == WSAEWOULDBLOCK)
+					{
+						continue;
+					}
+
+					break;
+				}				
+			
+				cout << "Send Data Len = " << recvLen << endl;
+				break;
+				
+			}
+		}
+	}
 
 	::WSACleanup();
 }
