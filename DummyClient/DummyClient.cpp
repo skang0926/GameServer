@@ -6,6 +6,12 @@
 #include <WS2tcpip.h>
 #pragma comment(lib, "ws2_32.lib")
 
+void HandleError(const char* cause)
+{
+	int32 errCode = ::WSAGetLastError();
+	cout << "Socket ErrorCode : " << errCode << endl;
+}
+
 int main()
 {
 	WSAData wsaData;
@@ -14,11 +20,10 @@ int main()
 		return 0;
 	}
 
-	SOCKET clientSocket =  ::socket(AF_INET, SOCK_STREAM, 0);
+	SOCKET clientSocket =  ::socket(AF_INET, SOCK_DGRAM, 0);
 	if (clientSocket == INVALID_SOCKET)
 	{
-		int32 errCode = ::WSAGetLastError();
-		cout << "Socket ErrorCode : " << errCode << endl;
+		HandleError("Socket");
 		return 0;
 	}
 	
@@ -28,51 +33,51 @@ int main()
 	//serverAddr.sin_addr.s_addr = ::inet_addr("127.0.0.1"); << deprecated
 	::inet_pton(AF_INET, "127.0.0.1", &serverAddr.sin_addr);
 	serverAddr.sin_port = ::htons(7777); // 80 : HTTP
-	// host to network short , Little-Endian vs Big-Endian 이슈
-	// 저장되는 메모리의 주소 진행방향 차이
-	// 0x12345678 4바이트 정수
-	// low [0x78][0x56][0x34][0x12] high : little = 일반적 컴퓨터, 모바일 환경
-	// low [0x12][0x34][0x56][0x78] high : high = network 표준
-	//
 
-	if (::connect(clientSocket, (SOCKADDR*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR)
-	{
-		int32 errCode = ::WSAGetLastError();
-		cout << "Socket ErrorCode : " << errCode << endl;
-		return 0;
-	}
-
-	cout << "Connected To Server!" << endl;
+	// Connected UDP
+	::connect(clientSocket, (SOCKADDR*)&serverAddr, sizeof(serverAddr));
 
 	while (true)
 	{
 		char sendBuffer[100] = "Hello World!";
 
-		for (int32 i = 0; i < 10; i++)
+
+		// Unconnected UDP
+		//int32 resultCode = ::sendto(clientSocket, sendBuffer, sizeof(sendBuffer), 0,
+		//	(SOCKADDR*)&serverAddr, sizeof(serverAddr));
+
+		// Connected UDP
+		int32 resultCode = ::send(clientSocket, sendBuffer, sizeof(sendBuffer), 0);
+		
+		
+		if (resultCode == SOCKET_ERROR)
 		{
-			int32 resultCode = ::send(clientSocket, sendBuffer, sizeof(sendBuffer), 0);
-			if (resultCode == SOCKET_ERROR)
-			{
-				int32 errCode = ::WSAGetLastError();
-				cout << "Send ErrorCode : " << errCode << endl;
-				return 0;
-			}
+			HandleError("Socket");
+			return 0;
 		}
 
 		cout << "Send Data! Len = " << sizeof(sendBuffer) << endl;
 
-		//char recvBuffer[1000];
 
-		//int32 recvLen = ::recv(clientSocket, recvBuffer, sizeof(recvBuffer), 0);
-		//if (recvLen <= 0)
-		//{
-		//	int32 errCode = ::WSAGetLastError();
-		//	cout << "Send ErrorCode : " << errCode << endl;
-		//	return 0;
-		//}
+		SOCKADDR_IN recvAddr;
+		::memset(&recvAddr, 0, sizeof(recvAddr));
+		int32 addrLen = sizeof(recvAddr);
 
-		//cout << "Recv Data! Data = " << recvBuffer << endl;
-		//cout << "Recv Data! Len = " << recvLen << endl;
+		char recvBuffer[1000];
+
+		//int32 recvLen = ::recvfrom(clientSocket, recvBuffer, sizeof(recvBuffer), 0,
+		//	(SOCKADDR*)&recvAddr, &addrLen);
+
+		int32 recvLen = ::recv(clientSocket, recvBuffer, sizeof(recvBuffer), 0);
+
+		if (recvLen <= 0)
+		{
+			HandleError("RecvFrom");
+			return 0;
+		}
+
+		cout << "Recv Data! Data = " << recvBuffer << endl;
+		cout << "Recv Data! Len = " << recvLen << endl;
 
 		this_thread::sleep_for(1s);
 	}
