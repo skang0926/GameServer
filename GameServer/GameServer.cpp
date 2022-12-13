@@ -77,112 +77,155 @@ int main()
 		return 0;
 	}
 
-	// Select 모델 = (select 함수가 핵심이 되는), 서버는 iocp , 클라는 select 모델 쓰는 경우도 존재
-	// 소켓 함수 호출이 성공할 시점을 미리 알 수 있다
-	// 기존 문제 상황 해결
-	// 수신 버퍼에 데이터가 없는데 read - 블로킹 or 바쁜 대기
-	// 송신버퍼가 꽉 찼는데 write - 블로킹 or 바쁜 대기
+	// WSAEventSelect = WSAEventSelect 함수가 핵심
+	// 소켓과 관련된 네트워크 이벤트 객체를 통해 감지
 	// 
-	// socket set
-	// 1. 읽기[ ] 쓰기 [ ] 예외(OOB) [ ] 관찰 대상 등록
-	// OutOfBand는 send() 마지막 인자 MSG_OOB로 보내는 특별한 데이터
-	// 받는 쪽에서도 recv OOB 세팅을 해야 읽을 수 있음
-	// 2) select(readSet, writeSet, exceptSet); -> 관찰 시작
-	// 3) 적어도 하나의 소켓이 준비되면 리턴 -> 낙오자는 알아서 제거
-	// 4) 남은 소켓 체크해서 진행
+	// 이벤트 객체 관련 함수
+	// 생성 : WSACreateEvent (수동 리셋 Manual-Rest + Non Signaled 상태 시작
+	// 삭제 : WSACloseEvent
+	// 신호 상태 감지 : WSAWaitForMultipleEvents
+	// 구체적인 네트워크 이벤트 알아내기 : WSAEnumNetworkEvents
+	// 소켓 - 이벤트 객체 연동
+	// WSAEventSelect(socket, event, networkEvents)
+	// - 관심있는 네트워크 이벤트
+	// FD_ACCEPT : 접속한 클라가 있음
+	// FD_READ : 데이터 수신 가능 recv, recvfrom
+	// FD_WRITE : 데이터 송신 가능 send sendto
+	// FD_CLOSE : 상대가 접속 종료
+	// FD_CONNECT : 통신을 위한 연결 절차 완료
+	// FD_OOB
+	// 
+	// 주의사항
+	// WSAEventSelect 함수를 호출하면 해당 소켓은 자동으로 넌 블로킹 모드로 전환
+	// accept() 함수가 리턴하는 소켓은 listenSocket과 동일한 속성을 갖는다
+	// 따라서 clientSocket은 FD_READ, FD_WRITE 등을 다시 등록 필요
+	//
+	// 중요
+	// 이벤트 발생 시 적절한 소켓 함수 호출해야함
+	// 아니면 다음 번에 동일 네트워크 이벤트 발생 X
+	// ex) FD_READ 이벤트 떴으면 recv 호출해야함, 안하면 FD_READ 다시X
+	// 
+	// 1) count, event
+	// 2) waitAll : 모두 기다리기? 하나만 완료 ?
+	// 3) timeout
+	// 4) false
+	// return 완료된 첫번째 인덱스
+	// WSAWaitForMultipleEvents
+	// 
+	// 1) socket
+	// 2) eventObject : socket과 연동된 이벤트 객체 핸들을 넘겨주면 이벤트 객체를 nonsignaled로
+	// 3) networkEvent : 네트워크 이벤트 / 오류 정보가 저장
+	// WSAEnumNetworkEvents
 
-	// fd_set set;
-	// 
-	// FD_ZERO : 비운다
-	// ex) FD_ZERO(set);
-	// 
-	// FD_SET : 소켓 s를 넣음
-	// ex) FD_SET(s, &set);
-	// 
-	// FD_CLR : 소켓 s를 제거
-	// ex) FD_CLR(s, &set);
-	// 
-	// FD_ISSET : 소켓 s가 set에 들어있으면 0이 아닌 값을 리턴
-
+	vector<WSAEVENT> wsaEvents;
 	vector<Session> sessions;
 	sessions.reserve(100);
 
-	fd_set reads;
-	fd_set writes;
+	WSAEVENT listenEvent = ::WSACreateEvent();
+	wsaEvents.push_back(listenEvent);
+	sessions.push_back(Session{ listenSocket });
+	if (::WSAEventSelect(listenSocket, listenEvent, FD_ACCEPT | FD_CLOSE) == SOCKET_ERROR)
+	{
+		return 0;
+	}
+
 
 	while (true)
 	{
-		FD_ZERO(&reads);
-		FD_ZERO(&writes);
-
-		FD_SET(listenSocket, &reads);
-
-		for (Session& s : sessions)
+		int32 index = ::WSAWaitForMultipleEvents(wsaEvents.size(), &wsaEvents[0], FALSE, WSA_INFINITE, FALSE);
+		
+		if (index == WSA_WAIT_FAILED)
 		{
-			if (s.recvBytes <= s.sendBytes)
-			{
-				FD_SET(s.socket, &reads);
-			}
-			else
-			{
-				FD_SET(s.socket, &writes);
-			}
+			continue;
 		}
+		index -= WSA_WAIT_EVENT_0;
 
-		// 마지막 timeout 인자 설정 가능
-		int32 retVal = ::select(0, &reads, &writes, nullptr, nullptr);
-		if (retVal == SOCKET_ERROR)
+		// ::WSAResetEvent(wsaEvents[index]); <- WSAEnumNetworkEvent에 포함되어있음
+
+		WSANETWORKEVENTS networkEvents;
+		if (::WSAEnumNetworkEvents(sessions[index].socket, wsaEvents[index], &networkEvents) == SOCKET_ERROR)
 		{
-			break;
+			continue;
 		}
-
-		// Listener 소켓 체크
-
-		if (FD_ISSET(listenSocket, &reads))
+		
+		if (networkEvents.lNetworkEvents & FD_ACCEPT)
 		{
+			if (networkEvents.iErrorCode[FD_ACCEPT_BIT] != 0)
+			{
+				continue;
+			}
+
 			SOCKADDR_IN clientAddr;
 			int32 addrLen = sizeof(clientAddr);
+			clientAddr.sin_port = ::htons(7777);
+
 			SOCKET clientSocket = ::accept(listenSocket, (SOCKADDR*)&clientAddr, &addrLen);
 			if (clientSocket != INVALID_SOCKET)
 			{
-				cout << "Client Connected" << endl;
+				cout << " Client Connected" << endl;
+
+				WSAEVENT clientEvent = ::WSACreateEvent();
+				wsaEvents.push_back(clientEvent);
 				sessions.push_back(Session{ clientSocket });
+				if (::WSAEventSelect(clientSocket, clientEvent, FD_READ | FD_WRITE | FD_CLOSE) == SOCKET_ERROR)
+				{
+					return 0;
+				}
 			}
 		}
 
-		for (Session& s : sessions)
+		if (networkEvents.lNetworkEvents & FD_READ || networkEvents.lNetworkEvents & FD_WRITE)
 		{
-			if (FD_ISSET(s.socket, &reads))
+			if (networkEvents.lNetworkEvents & FD_READ && networkEvents.iErrorCode[FD_READ_BIT] != 0)
+			{
+				continue;
+			}
+
+			if (networkEvents.lNetworkEvents & FD_WRITE && networkEvents.iErrorCode[FD_WRITE_BIT] != 0)
+			{
+				continue;
+			}
+
+			Session& s = sessions[index];
+
+			if (s.recvBytes == 0)
 			{
 				int32 recvLen = ::recv(s.socket, s.recvBuffer, BUFSIZE, 0);
-				if (recvLen <= 0)
+				if (recvLen == SOCKET_ERROR && ::WSAGetLastError() != WSAEWOULDBLOCK)
 				{
+					// TODO Remove Socket
 					continue;
 				}
 
 				s.recvBytes = recvLen;
+				cout << "Recv Data" << recvLen << endl;
+
 			}
 
-			if (FD_ISSET(s.socket, &writes))
+			if (s.recvBytes > s.sendBytes)
 			{
-				// 블로킹 모드 -> 모든 데이터 다 보냄
-				// 논 블로킹 모드 -> 데이터 일부만 보낼 수 있음
 				int32 sendLen = ::send(s.socket, &s.recvBuffer[s.sendBytes], s.recvBytes - s.sendBytes, 0);
-				if (sendLen <= 0)
+				if (sendLen == SOCKET_ERROR && ::WSAGetLastError() != WSAEWOULDBLOCK)
 				{
+					// TODO Remove Socket
 					continue;
 				}
 
 				s.sendBytes += sendLen;
-
 				if (s.recvBytes == s.sendBytes)
 				{
-					s.recvBytes = 0;
 					s.sendBytes = 0;
+					s.recvBytes = 0;
 				}
+
+				cout << "Send Data = " << sendLen << endl;
+			}
+
+			if (networkEvents.lNetworkEvents & FD_CLOSE)
+			{
+				// TODO Remove Socket
 			}
 		}
-
 	}
 
 
