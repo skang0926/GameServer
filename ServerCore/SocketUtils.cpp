@@ -12,12 +12,10 @@ LPFN_ACCEPTEX		SocketUtils::AcceptEx = nullptr;
 void SocketUtils::Init()
 {
 	WSADATA wsaData;
-	ASSERT_CRASH(::WSAStartup(MAKEWORD(2, 2), OUT &wsaData) == 0);
-	
+	ASSERT_CRASH(::WSAStartup(MAKEWORD(2, 2), OUT & wsaData) == 0);
+
 	/* 런타임에 주소 얻어오는 API */
 	SOCKET dummySocket = CreateSocket();
-
-	// 비동기 함수 ex를 사용하기 위한 W.F 바인딩 작업
 	ASSERT_CRASH(BindWindowsFunction(dummySocket, WSAID_CONNECTEX, reinterpret_cast<LPVOID*>(&ConnectEx)));
 	ASSERT_CRASH(BindWindowsFunction(dummySocket, WSAID_DISCONNECTEX, reinterpret_cast<LPVOID*>(&DisconnectEx)));
 	ASSERT_CRASH(BindWindowsFunction(dummySocket, WSAID_ACCEPTEX, reinterpret_cast<LPVOID*>(&AcceptEx)));

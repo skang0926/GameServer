@@ -9,7 +9,7 @@
 void HandleError(const char* cause)
 {
 	int32 errCode = ::WSAGetLastError();
-	cout << "Socket ErrorCode : " << errCode << endl;
+	cout << cause << " ErrorCode : " << errCode << endl;
 }
 
 int main()
@@ -37,14 +37,14 @@ int main()
 	{
 		if (::connect(clientSocket, (SOCKADDR*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR)
 		{
-			// 논블로킹이라 루프 돔
+			// 원래 블록했어야 했는데... 너가 논블로킹으로 하라며?
 			if (::WSAGetLastError() == WSAEWOULDBLOCK)
 				continue;
 			// 이미 연결된 상태라면 break
 			if (::WSAGetLastError() == WSAEISCONN)
 				break;
 			// Error
-			break;
+			continue;
 		}
 	}
 

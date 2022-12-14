@@ -26,7 +26,6 @@ public:
 	static bool SetTcpNoDelay(SOCKET socket, bool flag);
 	static bool SetUpdateAcceptSocket(SOCKET socket, SOCKET listenSocket);
 
-	// 소켓 기본 설정 래핑 함수
 	static bool Bind(SOCKET socket, NetAddress netAddr);
 	static bool BindAnyAddress(SOCKET socket, uint16 port);
 	static bool Listen(SOCKET socket, int32 backlog = SOMAXCONN);
