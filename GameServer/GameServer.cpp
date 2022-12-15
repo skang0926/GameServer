@@ -1,19 +1,16 @@
 ﻿#include "pch.h"
-#include <iostream>
-
-#include <thread>
-#include <atomic>
-#include <mutex>
-#include <Windows.h>
-#include "CoreMacro.h"
 #include "ThreadManager.h"
-
 #include "Service.h"
 #include "Session.h"
 
 class GameSession : public Session
 {
 public:
+	~GameSession()
+	{
+		cout << "~GameSession" << endl;
+	}
+
 	virtual int32 OnRecv(BYTE* buffer, int32 len) override
 	{
 		// Echo
