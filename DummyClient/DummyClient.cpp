@@ -37,10 +37,9 @@ int main()
 	{
 		if (::connect(clientSocket, (SOCKADDR*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR)
 		{
-			// 원래 블록했어야 했는데... 너가 논블로킹으로 하라며?
 			if (::WSAGetLastError() == WSAEWOULDBLOCK)
 				continue;
-			// 이미 연결된 상태라면 break
+
 			if (::WSAGetLastError() == WSAEISCONN)
 				break;
 			// Error

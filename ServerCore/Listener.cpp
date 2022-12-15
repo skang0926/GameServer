@@ -112,11 +112,9 @@ void Listener::ProcessAccept(AcceptEvent* acceptEvent)
 		return;
 	}
 
+	cout << "Clinet Connect" << endl;
+
 	session->SetNetAddress(NetAddress(sockAddress));
-
-	cout << "Client Connected!" << endl;
-
-	// TODO
-
+	session->ProcessConnect();
 	RegisterAccept(acceptEvent);
 }
