@@ -16,4 +16,4 @@ private:
 	Set<GameSessionRef> _sessions;
 };
 
-extern GameSessionManager GSessionManager;
+extern GameSessionManager* GSessionManager;

@@ -30,16 +30,7 @@ void Session::Send(SendBufferRef sendBuffer)
 		RegisterSend();
 	}*/
 
-	/*	
-		앞 흐름이 send가 끝나지 않았다면 lock은 풀렸지만 해당 변수가 true
-		즉, queue에 push는 하지만 registersend 진입은 불가
-		send가 끝나지 않았다면
-		큐에 데이터를 쌓고 탈출
-
-		send가 끝나서 registerSend 흐름을 잡았다면
-		락을 잡은 상태로 책임지고 그동안 큐에 쌓인 데이터를 send
-	*/
-	if (_sendRegistered.exchange(true) == false) 
+	if (_sendRegistered.exchange(true) == false)
 		RegisterSend();
 }
 
@@ -169,7 +160,7 @@ void Session::RegisterSend()
 		return;
 
 	_sendEvent.Init();
-	_sendEvent.owner = shared_from_this(); // 레퍼런스 카운터를 유지하기 위해
+	_sendEvent.owner = shared_from_this(); // 객체를 유지하기 위해서 레퍼런스 카운터를 더함
 
 	// 보낼 데이터를 sendEvent에 등록
 	{
