@@ -28,7 +28,23 @@ int main()
 		});
 	}
 
-//	delete GSessionManager; // 컴파일러 최적화 문제로 delete 불가능
+	char sendData[1000] = "Hello World";
+
+	while (true)
+	{
+		SendBufferRef sendBuffer = GSendBufferManager->Open(4096);
+
+		BYTE* buffer = sendBuffer->Buffer();
+		((PacketHeader*)buffer)->size = (sizeof(sendData) + sizeof(PacketHeader));
+		((PacketHeader*)buffer)->id = 1; // 1 : Hello Msg
+		::memcpy(&buffer[4], sendData, sizeof(sendData));
+		sendBuffer->Close((sizeof(sendData) + sizeof(PacketHeader)));
+
+		GSessionManager->Broadcast(sendBuffer);
+
+		this_thread::sleep_for(250ms);
+	}
+
 
 	GThreadManager->Join();
 }
