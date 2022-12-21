@@ -6,6 +6,8 @@
 #include "GameSessionManager.h"
 #include "BufferWriter.h"
 #include "ServerPacketHandler.h"
+#include <tchar.h>
+#include "Protocol.pb.h"
 
 int main()
 {
