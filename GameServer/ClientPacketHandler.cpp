@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "ServerPacketHandler.h"
+#include "ClientPacketHandler.h"
 
 PacketHandlerFunc GPacketHandler[UINT16_MAX];
 
