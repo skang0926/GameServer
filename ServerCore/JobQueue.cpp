@@ -1,9 +1,10 @@
 #include "pch.h"
 #include "JobQueue.h"
+#include "GlobalQueue.h"
 
-/*---------------
+/*--------------
 	JobQueue
-----------------*/
+---------------*/
 
 void JobQueue::Push(JobRef&& job)
 {
@@ -13,16 +14,23 @@ void JobQueue::Push(JobRef&& job)
 	// 첫번째 Job을 넣은 쓰레드가 실행까지 담당
 	if (prevCount == 0)
 	{
-		Execute();
+		// 이미 실행중인 JobQueue가 없으면 실행
+		if (LCurrentJobQueue == nullptr)
+		{
+			Execute();
+		}
+		else
+		{
+			// 여유 있는 다른 쓰레드가 실행하도록 GlobalQueue에 넘긴다
+			GGlobalQueue->Push(shared_from_this());
+		}
 	}
 }
 
-// 1) 일감이 너무 몰리면?
-// 2) DoAsync 타고 타고 가서 절대 끝나지 않는 상황 (일감이 한 쓰레드한테 몰림)
-// 3) 쓰레드 여러개가 Job을 꺼내가서 작업하는게 멀티쓰레드의 장점인데 하나의 쓰레드가 모든 일을 다 하는 형태
-// 4) 이를 담당하는 JobQueue 의 Owner가 유저라면, 그 유저는 엄청난 렉이 걸릴 수 있음
 void JobQueue::Execute()
 {
+	LCurrentJobQueue = this;
+
 	while (true)
 	{
 		Vector<JobRef> jobs;
@@ -35,7 +43,19 @@ void JobQueue::Execute()
 		// 남은 일감이 0개라면 종료
 		if (_jobCount.fetch_sub(jobCount) == jobCount)
 		{
+			LCurrentJobQueue = nullptr;
 			return;
+		}
+
+		// Tick 통해 일정 시간 지나면 나오도록 처리
+		const uint64 now = ::GetTickCount64();
+		if (now >= LEndTickCount)
+		{
+			LCurrentJobQueue = nullptr;
+			// 여유 있는 다른 쓰레드가 실행하도록 GlobalQueue에 넘긴다
+			GGlobalQueue->Push(shared_from_this());
+			break;
 		}
 	}
 }
+

@@ -5,10 +5,12 @@
 #include "DeadLockProfiler.h"
 #include "SocketUtils.h"
 #include "SendBuffer.h"
+#include "GlobalQueue.h"
 
 ThreadManager* GThreadManager = nullptr;
 Memory* GMemory = nullptr;
 SendBufferManager* GSendBufferManager = nullptr;
+GlobalQueue* GGlobalQueue = nullptr;
 
 DeadLockProfiler* GDeadLockProfiler = nullptr;
 
@@ -20,6 +22,7 @@ public:
 		GThreadManager = new ThreadManager();
 		GMemory = new Memory();
 		GSendBufferManager = new SendBufferManager();
+		GGlobalQueue = new GlobalQueue();
 		GDeadLockProfiler = new DeadLockProfiler();
 		SocketUtils::Init();
 	}
