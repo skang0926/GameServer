@@ -2,6 +2,9 @@
 
 #define OUT // cas 호출 시 expected가 다시 초기화 되는경우 명시적 표시
 
+#define NAMESPACE_BEGIN(name)	namespace name {
+#define NAMESPACE_END			}
+
 /*----------------
 	   Lock
 -----------------*/

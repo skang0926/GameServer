@@ -92,9 +92,4 @@
       <Filter>Protocol</Filter>
     </None>
   </ItemGroup>
-  <ItemGroup>
-    <Xml Include="GameDB.xml">
-      <Filter>DB</Filter>
-    </Xml>
-  </ItemGroup>
 </Project>
